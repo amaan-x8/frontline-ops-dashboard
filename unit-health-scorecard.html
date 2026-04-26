@@ -1,0 +1,1022 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unit Health Scorecard</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --stripe: #f9fafb;
+      --header: #f3f4f6;
+      --good: #16a34a;
+      --warn: #d97706;
+      --bad: #dc2626;
+      --badge-healthy-bg: #dcfce7;
+      --badge-healthy-text: #166534;
+      --badge-risk-bg: #fef3c7;
+      --badge-risk-text: #92400e;
+      --badge-inactive-bg: #fee2e2;
+      --badge-inactive-text: #991b1b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+      line-height: 1.4;
+      padding: 28px;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .as-of {
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 500;
+      white-space: nowrap;
+      padding-top: 8px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+
+    .panel-title {
+      margin: 0 0 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field-label {
+      display: block;
+      margin: 0 0 8px;
+      font-size: 0.84rem;
+      color: #374151;
+      font-weight: 600;
+    }
+
+    .pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      border: 1px solid #d1d5db;
+      color: #374151;
+      background: #fff;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      padding: 6px 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .pill:hover {
+      border-color: #9ca3af;
+    }
+
+    .pill.active {
+      color: #111827;
+      border-color: #93c5fd;
+      background: #eff6ff;
+    }
+
+    .control {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.9rem;
+      color: #111827;
+      background: #fff;
+      font-family: inherit;
+    }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .rule-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .rule-name {
+      margin: 0 0 8px;
+      font-size: 0.82rem;
+      color: #374151;
+      font-weight: 600;
+    }
+
+    .range-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      color: #4b5563;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .rule-card input[type="range"] {
+      width: 100%;
+      accent-color: #2563eb;
+    }
+
+    .required-workflows {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(120px, 1fr));
+      gap: 10px 14px;
+      margin-top: 2px;
+    }
+
+    .required-workflows .workflow-item input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow-x: auto;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 1160px;
+      font-size: 0.93rem;
+    }
+
+    thead th {
+      background: var(--header);
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 600;
+      color: #111827;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+
+    tbody tr:nth-child(even) {
+      background: var(--stripe);
+    }
+
+    tbody tr {
+      cursor: pointer;
+    }
+
+    tbody tr:hover {
+      background: #f3f4f6;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .unit-name {
+      font-weight: 600;
+    }
+
+    .utilization-cell {
+      min-width: 250px;
+    }
+
+    .utilization-track {
+      width: 100%;
+      height: 22px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .utilization-fill {
+      height: 100%;
+      border-radius: 999px;
+    }
+
+    .utilization-label {
+      margin-top: 6px;
+      display: inline-block;
+      font-size: 0.82rem;
+      color: #374151;
+      font-weight: 600;
+    }
+
+    .bar-good {
+      background: linear-gradient(90deg, #22c55e, #16a34a);
+    }
+
+    .bar-warn {
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+    }
+
+    .bar-bad {
+      background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+
+    .workflows {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(88px, 1fr));
+      gap: 8px 12px;
+      min-width: 500px;
+    }
+
+    .workflow-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #374151;
+      white-space: nowrap;
+      font-size: 0.88rem;
+    }
+
+    .workflow-item input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #2563eb;
+      cursor: default;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.79rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      border: 1px solid transparent;
+    }
+
+    .badge-healthy {
+      background: var(--badge-healthy-bg);
+      color: var(--badge-healthy-text);
+      border-color: #bbf7d0;
+    }
+
+    .badge-risk {
+      background: var(--badge-risk-bg);
+      color: var(--badge-risk-text);
+      border-color: #fde68a;
+    }
+
+    .badge-inactive {
+      background: var(--badge-inactive-bg);
+      color: var(--badge-inactive-text);
+      border-color: #fecaca;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 20px 14px;
+      font-size: 0.9rem;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.28);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 40;
+    }
+
+    .overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 480px;
+      max-width: 100vw;
+      height: 100vh;
+      background: #fff;
+      border-left: 1px solid var(--line);
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+      transform: translateX(100%);
+      transition: transform 0.22s ease;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .drawer-title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .drawer-subtitle {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 500;
+    }
+
+    .drawer-close {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #374151;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .drawer-body {
+      padding: 16px 18px 20px;
+      overflow: auto;
+    }
+
+    .drawer-section {
+      margin-bottom: 18px;
+    }
+
+    .drawer-section h3 {
+      margin: 0 0 10px;
+      font-size: 0.92rem;
+      color: #111827;
+    }
+
+    .sparkline-wrap {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .sparkline {
+      width: 100%;
+      height: 90px;
+      display: block;
+    }
+
+    .workflow-chart-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .mini-bar-chart {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: #fff;
+    }
+
+    .mini-bar-title {
+      margin: 0 0 8px;
+      font-size: 0.8rem;
+      color: #374151;
+      font-weight: 600;
+    }
+
+    .mini-bar-svg {
+      width: 100%;
+      height: 52px;
+      display: block;
+    }
+
+    .contact-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .contact-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 0.86rem;
+    }
+
+    .contact-row:last-child {
+      border-bottom: none;
+    }
+
+    .contact-label {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .contact-value {
+      color: #111827;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <h1>Unit Health Scorecard</h1>
+        <p class="subtitle">Operational visibility for clinical unit adoption, engagement, and activity.</p>
+      </div>
+      <div id="asOfLine" class="as-of" aria-live="polite"></div>
+    </div>
+
+    <section class="panel" aria-label="Filters">
+      <div class="filter-grid">
+        <div>
+          <span class="field-label">Status Filters</span>
+          <div id="statusPills" class="pill-group"></div>
+        </div>
+        <label>
+          <span class="field-label">Health System</span>
+          <select id="healthSystemFilter" class="control"></select>
+        </label>
+        <label>
+          <span class="field-label">Search Unit Name</span>
+          <input id="unitSearch" class="control" type="search" placeholder="Search units">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Status rules">
+      <h2 class="panel-title">Status Rules</h2>
+      <div class="rules-grid">
+        <div class="rule-card">
+          <p class="rule-name">Healthy threshold (utilization)</p>
+          <input id="healthyThreshold" type="range" min="50" max="100" value="85">
+          <div class="range-meta"><span>50%</span><span id="healthyThresholdValue">85%</span><span>100%</span></div>
+        </div>
+        <div class="rule-card">
+          <p class="rule-name">Inactive threshold (utilization)</p>
+          <input id="inactiveThreshold" type="range" min="0" max="50" value="50">
+          <div class="range-meta"><span>0%</span><span id="inactiveThresholdValue">50%</span><span>50%</span></div>
+        </div>
+        <label class="rule-card">
+          <span class="rule-name">Active in last N days</span>
+          <input id="activityWindow" class="control" type="number" min="1" value="7">
+        </label>
+      </div>
+      <div style="margin-top: 14px;">
+        <span class="field-label">Required workflows for Healthy</span>
+        <div id="requiredWorkflows" class="required-workflows"></div>
+      </div>
+    </section>
+
+    <section class="table-wrap" aria-label="Unit health scorecard table">
+      <table>
+        <thead>
+          <tr>
+            <th>Unit Name</th>
+            <th>Health System</th>
+            <th>Activation Date</th>
+            <th>Daily Utilization</th>
+            <th>Workflows Active</th>
+            <th>Last Active</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="scorecardBody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="drawerOverlay" class="overlay" aria-hidden="true"></div>
+  <aside id="unitDrawer" class="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div>
+        <h2 id="drawerUnitName" class="drawer-title"></h2>
+        <p id="drawerHealthSystem" class="drawer-subtitle"></p>
+      </div>
+      <button id="drawerClose" class="drawer-close" type="button" aria-label="Close details">Close</button>
+    </div>
+    <div class="drawer-body">
+      <section class="drawer-section">
+        <h3>30-Day Utilization Trend</h3>
+        <div class="sparkline-wrap">
+          <svg id="utilizationSparkline" class="sparkline" viewBox="0 0 420 90" preserveAspectRatio="none"></svg>
+        </div>
+      </section>
+      <section class="drawer-section">
+        <h3>Daily Workflow Volume</h3>
+        <div id="workflowCharts" class="workflow-chart-grid"></div>
+      </section>
+      <section class="drawer-section">
+        <h3>Contacts</h3>
+        <div class="contact-card">
+          <div class="contact-row"><span class="contact-label">Unit Lead</span><span id="contactUnitLead" class="contact-value"></span></div>
+          <div class="contact-row"><span class="contact-label">CNO</span><span id="contactCno" class="contact-value"></span></div>
+          <div class="contact-row"><span class="contact-label">CSM Owner</span><span id="contactCsm" class="contact-value"></span></div>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <script>
+    const WORKFLOWS = ["Rounding", "Handoffs", "Huddles", "Tasks", "Escalations"];
+    const STATUS_OPTIONS = ["Healthy", "At Risk", "Inactive"];
+    const UNITS = [
+      {
+        unitName: "Cardiac Stepdown Unit",
+        healthSystem: "Northwell Health",
+        activationDate: "2025-09-12",
+        utilization: 92,
+        workflows: { Rounding: true, Handoffs: true, Huddles: true, Tasks: true, Escalations: true },
+        lastActive: "2026-04-25"
+      },
+      {
+        unitName: "Medical-Surgical Unit 3B",
+        healthSystem: "Cleveland Clinic",
+        activationDate: "2025-11-03",
+        utilization: 74,
+        workflows: { Rounding: true, Handoffs: true, Huddles: true, Tasks: true, Escalations: false },
+        lastActive: "2026-04-24"
+      },
+      {
+        unitName: "Pediatric Intensive Care Unit (PICU)",
+        healthSystem: "Children's Hospital Colorado",
+        activationDate: "2026-01-18",
+        utilization: 88,
+        workflows: { Rounding: true, Handoffs: true, Huddles: true, Tasks: true, Escalations: true },
+        lastActive: "2026-04-25"
+      },
+      {
+        unitName: "Emergency Department - South Campus",
+        healthSystem: "Kaiser Permanente",
+        activationDate: "2025-08-07",
+        utilization: 53,
+        workflows: { Rounding: true, Handoffs: false, Huddles: true, Tasks: true, Escalations: false },
+        lastActive: "2026-04-20"
+      },
+      {
+        unitName: "Neonatal Intensive Care Unit (NICU)",
+        healthSystem: "Mass General Brigham",
+        activationDate: "2025-05-14",
+        utilization: 42,
+        workflows: { Rounding: false, Handoffs: true, Huddles: false, Tasks: true, Escalations: false },
+        lastActive: "2026-04-11"
+      }
+    ];
+
+    const state = {
+      healthyThreshold: 85,
+      inactiveThreshold: 50,
+      activityWindowDays: 7,
+      requiredWorkflows: new Set(WORKFLOWS),
+      statusFilters: new Set(["Healthy", "At Risk", "Inactive"]),
+      selectedHealthSystem: "All",
+      searchQuery: "",
+      activeDrawerUnit: null
+    };
+
+    const scorecardBody = document.getElementById("scorecardBody");
+    const healthyThresholdInput = document.getElementById("healthyThreshold");
+    const inactiveThresholdInput = document.getElementById("inactiveThreshold");
+    const activityWindowInput = document.getElementById("activityWindow");
+    const healthyThresholdValue = document.getElementById("healthyThresholdValue");
+    const inactiveThresholdValue = document.getElementById("inactiveThresholdValue");
+    const requiredWorkflowsContainer = document.getElementById("requiredWorkflows");
+    const statusPillsContainer = document.getElementById("statusPills");
+    const healthSystemFilter = document.getElementById("healthSystemFilter");
+    const unitSearch = document.getElementById("unitSearch");
+    const asOfLine = document.getElementById("asOfLine");
+    const drawerOverlay = document.getElementById("drawerOverlay");
+    const unitDrawer = document.getElementById("unitDrawer");
+    const drawerClose = document.getElementById("drawerClose");
+    const drawerUnitName = document.getElementById("drawerUnitName");
+    const drawerHealthSystem = document.getElementById("drawerHealthSystem");
+    const utilizationSparkline = document.getElementById("utilizationSparkline");
+    const workflowCharts = document.getElementById("workflowCharts");
+    const contactUnitLead = document.getElementById("contactUnitLead");
+    const contactCno = document.getElementById("contactCno");
+    const contactCsm = document.getElementById("contactCsm");
+
+    function hashString(value) {
+      let hash = 2166136261;
+      for (let i = 0; i < value.length; i += 1) {
+        hash ^= value.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+
+    function seededRandom(seed) {
+      let value = seed >>> 0;
+      return function next() {
+        value = (value * 1664525 + 1013904223) >>> 0;
+        return value / 4294967296;
+      };
+    }
+
+    function formatDateYYYYMMDD(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function daysBetween(startYYYYMMDD, endYYYYMMDD) {
+      const start = new Date(`${startYYYYMMDD}T00:00:00`);
+      const end = new Date(`${endYYYYMMDD}T00:00:00`);
+      const diff = end.getTime() - start.getTime();
+      return Math.floor(diff / 86400000);
+    }
+
+    function getStatus(unit) {
+      const today = formatDateYYYYMMDD(new Date());
+      const lastActiveDaysAgo = daysBetween(unit.lastActive, today);
+      const withinWindow = lastActiveDaysAgo <= state.activityWindowDays;
+      const requiredWorkflowsMet = Array.from(state.requiredWorkflows).every((wf) => unit.workflows[wf]);
+      if (
+        unit.utilization >= state.healthyThreshold &&
+        requiredWorkflowsMet &&
+        withinWindow
+      ) {
+        return "Healthy";
+      }
+      if (unit.utilization < state.inactiveThreshold || !withinWindow) {
+        return "Inactive";
+      }
+      return "At Risk";
+    }
+
+    function getBarClass(utilization) {
+      if (utilization >= state.healthyThreshold) return "bar-good";
+      if (utilization < state.inactiveThreshold) return "bar-bad";
+      return "bar-warn";
+    }
+
+    function badgeClass(status) {
+      if (status === "Healthy") return "badge-healthy";
+      if (status === "Inactive") return "badge-inactive";
+      return "badge-risk";
+    }
+
+    function renderFilters() {
+      statusPillsContainer.innerHTML = "";
+      const allStatuses = ["All", ...STATUS_OPTIONS];
+      allStatuses.forEach((status) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "pill";
+        const isActive = status === "All"
+          ? state.statusFilters.size === STATUS_OPTIONS.length
+          : state.statusFilters.has(status);
+        if (isActive) button.classList.add("active");
+        button.textContent = status;
+        button.addEventListener("click", () => {
+          if (status === "All") {
+            if (state.statusFilters.size === STATUS_OPTIONS.length) {
+              state.statusFilters = new Set();
+            } else {
+              state.statusFilters = new Set(STATUS_OPTIONS);
+            }
+          } else {
+            if (state.statusFilters.has(status)) {
+              state.statusFilters.delete(status);
+            } else {
+              state.statusFilters.add(status);
+            }
+          }
+          renderFilters();
+          renderTable();
+        });
+        statusPillsContainer.appendChild(button);
+      });
+
+      const systems = Array.from(new Set(UNITS.map((u) => u.healthSystem))).sort();
+      healthSystemFilter.innerHTML = "";
+      const allOption = document.createElement("option");
+      allOption.value = "All";
+      allOption.textContent = "All Health Systems";
+      healthSystemFilter.appendChild(allOption);
+      systems.forEach((system) => {
+        const option = document.createElement("option");
+        option.value = system;
+        option.textContent = system;
+        healthSystemFilter.appendChild(option);
+      });
+      healthSystemFilter.value = state.selectedHealthSystem;
+    }
+
+    function renderRequiredWorkflowToggles() {
+      requiredWorkflowsContainer.innerHTML = "";
+      WORKFLOWS.forEach((workflow) => {
+        const label = document.createElement("label");
+        label.className = "workflow-item";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.checked = state.requiredWorkflows.has(workflow);
+        input.addEventListener("change", () => {
+          if (input.checked) {
+            state.requiredWorkflows.add(workflow);
+          } else {
+            state.requiredWorkflows.delete(workflow);
+          }
+          renderTable();
+        });
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(workflow));
+        requiredWorkflowsContainer.appendChild(label);
+      });
+    }
+
+    function filteredUnits() {
+      return UNITS.filter((unit) => {
+        const status = getStatus(unit);
+        const statusPass = state.statusFilters.size === 0 || state.statusFilters.has(status);
+        const healthSystemPass = state.selectedHealthSystem === "All" || unit.healthSystem === state.selectedHealthSystem;
+        const searchPass = unit.unitName.toLowerCase().includes(state.searchQuery.toLowerCase());
+        return statusPass && healthSystemPass && searchPass;
+      });
+    }
+
+    function renderTable() {
+      const rows = filteredUnits();
+      scorecardBody.innerHTML = "";
+      if (rows.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 7;
+        td.className = "empty-state";
+        td.textContent = "No units match the current filters.";
+        tr.appendChild(td);
+        scorecardBody.appendChild(tr);
+        return;
+      }
+
+      rows.forEach((unit) => {
+        const status = getStatus(unit);
+        const tr = document.createElement("tr");
+        tr.setAttribute("role", "button");
+        tr.setAttribute("tabindex", "0");
+
+        tr.innerHTML = `
+          <td class="unit-name">${unit.unitName}</td>
+          <td>${unit.healthSystem}</td>
+          <td>${unit.activationDate}</td>
+          <td class="utilization-cell">
+            <div class="utilization-track">
+              <div class="utilization-fill ${getBarClass(unit.utilization)}" style="width: ${unit.utilization}%;"></div>
+            </div>
+            <span class="utilization-label">${unit.utilization}%</span>
+          </td>
+          <td>
+            <div class="workflows">
+              ${WORKFLOWS.map((wf) => `<label class="workflow-item"><input type="checkbox" ${unit.workflows[wf] ? "checked" : ""} disabled>${wf}</label>`).join("")}
+            </div>
+          </td>
+          <td>${unit.lastActive}</td>
+          <td><span class="badge ${badgeClass(status)}">${status}</span></td>
+        `;
+
+        tr.addEventListener("click", () => openDrawer(unit));
+        tr.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openDrawer(unit);
+          }
+        });
+        scorecardBody.appendChild(tr);
+      });
+    }
+
+    function linePath(values, width, height, minY, maxY) {
+      const stepX = width / (values.length - 1);
+      const scaleY = (value) => {
+        if (maxY === minY) return height / 2;
+        return height - ((value - minY) / (maxY - minY)) * height;
+      };
+      return values
+        .map((value, i) => `${i === 0 ? "M" : "L"} ${i * stepX} ${scaleY(value)}`)
+        .join(" ");
+    }
+
+    function renderSparkline(unit) {
+      const rand = seededRandom(hashString(`${unit.unitName}-utilization`));
+      const points = [];
+      let current = unit.utilization;
+      for (let i = 0; i < 30; i += 1) {
+        const drift = (rand() - 0.5) * 8;
+        current = Math.max(20, Math.min(100, current + drift));
+        points.push(Math.round(current));
+      }
+      const minY = Math.min(...points) - 3;
+      const maxY = Math.max(...points) + 3;
+      const path = linePath(points, 420, 90, minY, maxY);
+      utilizationSparkline.innerHTML = `
+        <polyline fill="none" stroke="#d1d5db" stroke-width="1" points="0,88 420,88"></polyline>
+        <path d="${path}" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+      `;
+    }
+
+    function renderWorkflowVolumeCharts(unit) {
+      workflowCharts.innerHTML = "";
+      WORKFLOWS.forEach((workflow) => {
+        const rand = seededRandom(hashString(`${unit.unitName}-${workflow}-volume`));
+        const bars = Array.from({ length: 12 }, () => Math.floor(rand() * 36) + 4);
+        const max = Math.max(...bars);
+        const barWidth = 26;
+        const gap = 8;
+        const base = 46;
+        const svgBars = bars.map((value, index) => {
+          const x = index * (barWidth + gap);
+          const height = Math.round((value / max) * 38);
+          const y = base - height;
+          const active = unit.workflows[workflow];
+          const color = active ? "#3b82f6" : "#9ca3af";
+          return `<rect x="${x}" y="${y}" width="${barWidth}" height="${height}" rx="3" fill="${color}" opacity="0.95"></rect>`;
+        }).join("");
+
+        const card = document.createElement("article");
+        card.className = "mini-bar-chart";
+        card.innerHTML = `
+          <p class="mini-bar-title">${workflow}</p>
+          <svg class="mini-bar-svg" viewBox="0 0 400 52" preserveAspectRatio="none">
+            <line x1="0" y1="46" x2="400" y2="46" stroke="#e5e7eb" stroke-width="1"></line>
+            ${svgBars}
+          </svg>
+        `;
+        workflowCharts.appendChild(card);
+      });
+    }
+
+    function pickNames(unit) {
+      const firstNames = ["Maya", "Jordan", "Alex", "Taylor", "Riley", "Avery", "Morgan", "Casey"];
+      const lastNames = ["Nguyen", "Patel", "Thompson", "Rivera", "Kim", "Brooks", "Hughes", "Sanchez"];
+      const rand = seededRandom(hashString(`${unit.unitName}-contacts`));
+      const fullName = () => {
+        const first = firstNames[Math.floor(rand() * firstNames.length)];
+        const last = lastNames[Math.floor(rand() * lastNames.length)];
+        return `${first} ${last}`;
+      };
+      return {
+        unitLead: fullName(),
+        cno: fullName(),
+        csm: fullName()
+      };
+    }
+
+    function openDrawer(unit) {
+      state.activeDrawerUnit = unit;
+      drawerUnitName.textContent = unit.unitName;
+      drawerHealthSystem.textContent = unit.healthSystem;
+      const names = pickNames(unit);
+      contactUnitLead.textContent = names.unitLead;
+      contactCno.textContent = names.cno;
+      contactCsm.textContent = names.csm;
+      renderSparkline(unit);
+      renderWorkflowVolumeCharts(unit);
+      drawerOverlay.classList.add("open");
+      unitDrawer.classList.add("open");
+      drawerOverlay.setAttribute("aria-hidden", "false");
+      unitDrawer.setAttribute("aria-hidden", "false");
+    }
+
+    function closeDrawer() {
+      state.activeDrawerUnit = null;
+      drawerOverlay.classList.remove("open");
+      unitDrawer.classList.remove("open");
+      drawerOverlay.setAttribute("aria-hidden", "true");
+      unitDrawer.setAttribute("aria-hidden", "true");
+    }
+
+    function bindControls() {
+      healthyThresholdInput.addEventListener("input", () => {
+        state.healthyThreshold = Number(healthyThresholdInput.value);
+        healthyThresholdValue.textContent = `${state.healthyThreshold}%`;
+        renderTable();
+      });
+
+      inactiveThresholdInput.addEventListener("input", () => {
+        state.inactiveThreshold = Number(inactiveThresholdInput.value);
+        inactiveThresholdValue.textContent = `${state.inactiveThreshold}%`;
+        renderTable();
+      });
+
+      activityWindowInput.addEventListener("input", () => {
+        const value = Number(activityWindowInput.value);
+        state.activityWindowDays = Number.isFinite(value) && value > 0 ? value : 1;
+        renderTable();
+      });
+
+      healthSystemFilter.addEventListener("change", () => {
+        state.selectedHealthSystem = healthSystemFilter.value;
+        renderTable();
+      });
+
+      unitSearch.addEventListener("input", () => {
+        state.searchQuery = unitSearch.value.trim();
+        renderTable();
+      });
+
+      drawerClose.addEventListener("click", closeDrawer);
+      drawerOverlay.addEventListener("click", closeDrawer);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && state.activeDrawerUnit) {
+          closeDrawer();
+        }
+      });
+    }
+
+    function setAsOfLine() {
+      const today = new Date();
+      const formatted = today.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+      asOfLine.textContent = `Data as of ${formatted}, 9:00 AM EST`;
+    }
+
+    function init() {
+      healthyThresholdValue.textContent = `${state.healthyThreshold}%`;
+      inactiveThresholdValue.textContent = `${state.inactiveThreshold}%`;
+      setAsOfLine();
+      renderFilters();
+      renderRequiredWorkflowToggles();
+      bindControls();
+      renderTable();
+    }
+
+    init();
+  </script>
+</body>
+</html>
