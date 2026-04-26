@@ -54,4 +54,4 @@ Clone the repo and open `unit-health-scorecard.html` in any modern browser. No b
 
 ## Live demo
 
-[Add Vercel or Netlify URL here]
+[https://frontline-ops-dashboard.vercel.app]
